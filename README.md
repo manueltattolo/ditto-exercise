@@ -1,13 +1,111 @@
-# Ditto Task Sync App
+# Ditto Take Home Exercise
 
-**Task**
-The task was to adapt one of Ditto's Quickstart applications by adding a simple new feature. The original apps already supported adding and synchronizing tasks. The goal was to extend this functionality by enabling users to search for specific tasks.
-To accomplish this, the following requirements were outlined:
+## The Exercise
+
+The task was to adapt one of Ditto's Quickstart applications by adding a simple new feature. 
+I choose React Native for this exercise due to my familiarity with React.
+
+The original app natively supports adding and synchronizing tasks. 
+The goal was to extend this functionality by enabling users to search for specific tasks.
+
+List of the requirements:
 - Start with an existing Quickstart application in a language of choice
 - Add UI components to initiate and receive a search query from the user
 - Retrieve all relevant documents from Ditto based on the query
 - Display the resulting set of documents to the user
 - The developer was free to adapt and extend the brief as they saw fit
+
+## Implemented
+
+### Search UI Component
+I created a new `SearchBar` component that:
+- Accepts user input
+- Triggers a search query as the user types
+
+```tsx
+import React, { useState } from 'react';
+import { View, TextInput, StyleSheet } from 'react-native';
+
+interface SearchBarProps {
+  onSearch: (query: string) => void;
+}
+
+const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
+  const [query, setQuery] = useState('');
+
+  const handleSearch = (text: string) => {
+    setQuery(text);
+    onSearch(text);
+  };
+
+  return (
+    <View style={styles.container}>
+      <TextInput
+        style={styles.input}
+        placeholder="Search tasks..."
+        value={query}
+        onChangeText={handleSearch}
+      />
+    </View>
+  );
+};
+```
+
+### Query Integration
+In App.tsx, instead of using the original static observer:
+
+```ts
+taskObserver.current = ditto.current.store.registerObserver(
+  'SELECT * FROM tasks WHERE NOT deleted',
+  ...
+);
+```
+
+I implemented a dynamic query using execute to retrieve tasks that start with the search query:
+
+```ts
+const fetchTasks = async (query = "") => {
+  let queryString = "SELECT * FROM tasks WHERE NOT deleted";
+  let args = {};
+
+  // If anything is typed in, it filters the results in Ditto
+  if (query.trim().length > 0) {
+    queryString += " AND title >= :query AND title < :query_end";
+    args = { query, query_end: query + "\uFFFF" }; 
+  }
+
+  queryString += " ORDER BY title ASC"; // Sort alphabetically
+
+  const result = await ditto.current?.store.execute(queryString, args);
+
+  const fetchedTasks: Task[] = result?.items.map(doc => ({
+    id: doc.value._id,
+    title: doc.value.title as string,
+    done: doc.value.done,
+    deleted: doc.value.deleted,
+  })) || [];
+
+  setTasks(fetchedTasks);
+};
+```
+
+triggered via a ``useEffect`` every time the user changes the search input:
+```ts
+useEffect(() => {
+  if (ditto.current) {
+    fetchTasks(searchQuery);
+  }
+}, [searchQuery]);
+```
+
+---
+
+### Images
+
+![image](https://github.com/user-attachments/assets/703789b2-ed78-40e3-9fc2-df1178c08e2a)
+![image](https://github.com/user-attachments/assets/5481d97b-d2e6-4481-b5eb-1e5b5f47f03d)
+![image](https://github.com/user-attachments/assets/d35ce7f4-73b5-4f8a-a1d0-b0b6c6656198)
+
 
 ## Prerequisites
 
