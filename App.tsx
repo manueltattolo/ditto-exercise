@@ -41,7 +41,7 @@ const identity: IdentityOnlinePlayground = {
   appID: "__REDACTED__",
   token: "__REDACTED__",
   customAuthURL: "__REDACTED__",
-  enableDittoCloudSync: false,
+  // enableDittoCloudSync: false,
 };
 
 async function requestPermissions() {
